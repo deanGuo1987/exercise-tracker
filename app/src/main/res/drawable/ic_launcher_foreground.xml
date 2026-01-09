@@ -9,10 +9,9 @@
   
   <!-- 运动人形图标 -->
   <group android:translateX="54" android:translateY="54">
-    <!-- 头部 -->
-    <circle android:fillColor="#FFFFFF"
-            android:cx="0" android:cy="-20"
-            android:radius="8"/>
+    <!-- 头部 (圆形用path绘制) -->
+    <path android:fillColor="#FFFFFF"
+          android:pathData="M0,-28 A8,8 0 1,1 0,-12 A8,8 0 1,1 0,-28 Z"/>
     
     <!-- 身体 -->
     <path android:fillColor="#FFFFFF"
@@ -34,33 +33,27 @@
     <path android:fillColor="#FFFFFF"
           android:pathData="M2,8 L8,20 L5,22 L1,10 Z"/>
     
-    <!-- 哑铃装饰 -->
-    <circle android:fillColor="#FFC107"
-            android:cx="-12" android:cy="-4"
-            android:radius="2"/>
-    <circle android:fillColor="#FFC107"
-            android:cx="12" android:cy="-4"
-            android:radius="2"/>
+    <!-- 哑铃装饰 (圆形用path绘制) -->
+    <path android:fillColor="#FFC107"
+          android:pathData="M-12,-6 A2,2 0 1,1 -12,-2 A2,2 0 1,1 -12,-6 Z"/>
+    <path android:fillColor="#FFC107"
+          android:pathData="M12,-6 A2,2 0 1,1 12,-2 A2,2 0 1,1 12,-6 Z"/>
   </group>
   
   <!-- 日历装饰 -->
   <group android:translateX="20" android:translateY="20">
-    <rect android:fillColor="#FFFFFF"
-          android:width="16" android:height="12"
-          android:x="0" android:y="0"
-          android:rx="2"/>
-    <rect android:fillColor="#FF5722"
-          android:width="16" android:height="3"
-          android:x="0" android:y="0"
-          android:rx="2"/>
-    <rect android:fillColor="#FF5722"
-          android:width="2" android:height="2"
-          android:x="2" android:y="5"/>
-    <rect android:fillColor="#FF5722"
-          android:width="2" android:height="2"
-          android:x="6" android:y="5"/>
-    <rect android:fillColor="#FF5722"
-          android:width="2" android:height="2"
-          android:x="10" android:y="5"/>
+    <!-- 日历背景 -->
+    <path android:fillColor="#FFFFFF"
+          android:pathData="M2,0 L14,0 A2,2 0 0,1 16,2 L16,10 A2,2 0 0,1 14,12 L2,12 A2,2 0 0,1 0,10 L0,2 A2,2 0 0,1 2,0 Z"/>
+    <!-- 日历顶部 -->
+    <path android:fillColor="#FF5722"
+          android:pathData="M2,0 L14,0 A2,2 0 0,1 16,2 L16,3 L0,3 L0,2 A2,2 0 0,1 2,0 Z"/>
+    <!-- 日历点 -->
+    <path android:fillColor="#FF5722"
+          android:pathData="M2,5 L4,5 L4,7 L2,7 Z"/>
+    <path android:fillColor="#FF5722"
+          android:pathData="M6,5 L8,5 L8,7 L6,7 Z"/>
+    <path android:fillColor="#FF5722"
+          android:pathData="M10,5 L12,5 L12,7 L10,7 Z"/>
   </group>
 </vector>
