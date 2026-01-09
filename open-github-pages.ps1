@@ -8,81 +8,83 @@ param(
 Write-Host "=== GitHub Pages Opener ===" -ForegroundColor Green
 Write-Host ""
 
-# 定义要打开的页面
-$pages = @{
-    "1" = @{
-        "name" = "仓库主页"
-        "url" = $RepoUrl
-        "description" = "查看项目概览和README"
+# 提取仓库信息
+if ($RepoUrl -match "github\.com/([^/]+)/([^/]+)") {
+    $owner = $matches[1]
+    $repo = $matches[2].TrimEnd('.git')
+    
+    Write-Host "Repository: $owner/$repo" -ForegroundColor Cyan
+    Write-Host ""
+    
+    # 定义页面URLs
+    $pages = @{
+        "1" = @{
+            "name" = "Repository Home"
+            "url" = "$RepoUrl"
+            "description" = "Main repository page"
+        }
+        "2" = @{
+            "name" = "Actions (Build Status)"
+            "url" = "$RepoUrl/actions"
+            "description" = "Check build status and download APK"
+        }
+        "3" = @{
+            "name" = "Latest Build"
+            "url" = "$RepoUrl/actions/workflows/build-apk.yml"
+            "description" = "Latest APK build workflow"
+        }
+        "4" = @{
+            "name" = "Releases"
+            "url" = "$RepoUrl/releases"
+            "description" = "Published releases and APK downloads"
+        }
+        "5" = @{
+            "name" = "Issues"
+            "url" = "$RepoUrl/issues"
+            "description" = "Report problems or request features"
+        }
     }
-    "2" = @{
-        "name" = "Actions页面"
-        "url" = "$RepoUrl/actions"
-        "description" = "查看构建状态和下载APK"
+    
+    # 显示选项
+    Write-Host "Available pages:" -ForegroundColor Yellow
+    foreach ($key in $pages.Keys | Sort-Object) {
+        $page = $pages[$key]
+        Write-Host "$key. $($page.name)" -ForegroundColor White
+        Write-Host "   $($page.description)" -ForegroundColor Gray
+        Write-Host ""
     }
-    "3" = @{
-        "name" = "Releases页面"
-        "url" = "$RepoUrl/releases"
-        "description" = "查看正式发布版本"
-    }
-    "4" = @{
-        "name" = "最新构建"
-        "url" = "$RepoUrl/actions/workflows/build-apk.yml"
-        "description" = "直接查看APK构建工作流"
-    }
-}
-
-Write-Host "选择要打开的页面:" -ForegroundColor Cyan
-foreach ($key in $pages.Keys | Sort-Object) {
-    $page = $pages[$key]
-    Write-Host "$key. $($page.name) - $($page.description)" -ForegroundColor White
-}
-Write-Host "5. 全部打开" -ForegroundColor White
-Write-Host "0. 退出" -ForegroundColor Gray
-Write-Host ""
-
-$choice = Read-Host "请输入选择 (1-5)"
-
-switch ($choice) {
-    "1" { 
-        Write-Host "打开仓库主页..." -ForegroundColor Green
-        Start-Process $pages["1"].url
-    }
-    "2" { 
-        Write-Host "打开Actions页面..." -ForegroundColor Green
+    
+    # 获取用户选择
+    $choice = Read-Host "Enter page number to open (1-5), 'a' for all, or Enter to open Actions page"
+    
+    if ([string]::IsNullOrEmpty($choice) -or $choice -eq "2") {
+        # 默认打开Actions页面
+        Write-Host "Opening Actions page..." -ForegroundColor Green
         Start-Process $pages["2"].url
     }
-    "3" { 
-        Write-Host "打开Releases页面..." -ForegroundColor Green
-        Start-Process $pages["3"].url
-    }
-    "4" { 
-        Write-Host "打开最新构建..." -ForegroundColor Green
-        Start-Process $pages["4"].url
-    }
-    "5" { 
-        Write-Host "打开所有页面..." -ForegroundColor Green
-        foreach ($key in $pages.Keys) {
+    elseif ($choice -eq "a" -or $choice -eq "A") {
+        # 打开所有页面
+        Write-Host "Opening all pages..." -ForegroundColor Green
+        foreach ($key in $pages.Keys | Sort-Object) {
             Start-Process $pages[$key].url
             Start-Sleep -Milliseconds 500  # 避免同时打开太多页面
         }
     }
-    "0" { 
-        Write-Host "退出" -ForegroundColor Gray
-        exit 0
+    elseif ($pages.ContainsKey($choice)) {
+        # 打开选择的页面
+        $selectedPage = $pages[$choice]
+        Write-Host "Opening $($selectedPage.name)..." -ForegroundColor Green
+        Start-Process $selectedPage.url
     }
-    default { 
-        Write-Host "无效选择，打开Actions页面..." -ForegroundColor Yellow
+    else {
+        Write-Host "Invalid choice. Opening Actions page by default..." -ForegroundColor Yellow
         Start-Process $pages["2"].url
     }
+    
+} else {
+    Write-Host "Invalid repository URL format" -ForegroundColor Red
+    Write-Host "Expected format: https://github.com/username/repository" -ForegroundColor Yellow
 }
 
 Write-Host ""
-Write-Host "页面已在浏览器中打开!" -ForegroundColor Green
-Write-Host ""
-Write-Host "📋 下载APK步骤提醒:" -ForegroundColor Cyan
-Write-Host "1. 在Actions页面找到绿色✅的构建" -ForegroundColor White
-Write-Host "2. 点击构建任务进入详情" -ForegroundColor White
-Write-Host "3. 滚动到底部找到'Artifacts'" -ForegroundColor White
-Write-Host "4. 下载'exercise-tracker-debug-apk'" -ForegroundColor White
-Write-Host "5. 解压zip文件获得APK" -ForegroundColor White
+Write-Host "Tip: Bookmark the Actions page to quickly check build status!" -ForegroundColor Cyan
