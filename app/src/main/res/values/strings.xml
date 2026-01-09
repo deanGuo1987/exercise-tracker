@@ -1,0 +1,15 @@
+<resources>
+    <string name="app_name">运动记录</string>
+    <string name="exercise_dialog_title">运动记录</string>
+    <string name="exercise_question">今天是否运动？</string>
+    <string name="yes">是</string>
+    <string name="no">否</string>
+    <string name="duration_question">运动时长</string>
+    <string name="duration_20">20分钟</string>
+    <string name="duration_30">30分钟</string>
+    <string name="duration_40">40分钟</string>
+    <string name="notification_title">运动提醒</string>
+    <string name="notification_message">哥哥，到时间运动了，今天是否运动？</string>
+    <string name="notification_channel_name">运动提醒</string>
+    <string name="notification_channel_description">每日运动提醒通知</string>
+</resources>

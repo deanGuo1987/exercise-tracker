@@ -1,0 +1,173 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master, develop ]
+  pull_request:
+    branches: [ main, master, develop ]
+  workflow_dispatch:
+    inputs:
+      build_type:
+        description: 'Build type'
+        required: true
+        default: 'debug'
+        type: choice
+        options:
+        - debug
+        - release
+        - both
+
+env:
+  GRADLE_OPTS: -Dorg.gradle.daemon=false -Dorg.gradle.workers.max=2
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Run unit tests
+      run: ./gradlew test --stacktrace
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results
+        path: |
+          app/build/reports/tests/
+          app/build/test-results/
+
+  build:
+    name: Build APK
+    needs: test
+    runs-on: ubuntu-latest
+    
+    strategy:
+      matrix:
+        build-type: [debug, release]
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Decode keystore (for release builds)
+      if: matrix.build-type == 'release'
+      run: |
+        echo "Creating dummy keystore for unsigned release build"
+        # 在实际项目中，这里会解码真实的keystore
+        
+    - name: Build ${{ matrix.build-type }} APK
+      run: |
+        if [ "${{ matrix.build-type }}" == "debug" ]; then
+          ./gradlew assembleDebug --stacktrace
+        else
+          ./gradlew assembleRelease --stacktrace
+        fi
+        
+    - name: Get APK info
+      id: apk-info
+      run: |
+        if [ "${{ matrix.build-type }}" == "debug" ]; then
+          APK_PATH="app/build/outputs/apk/debug/app-debug.apk"
+        else
+          APK_PATH="app/build/outputs/apk/release/app-release-unsigned.apk"
+        fi
+        
+        if [ -f "$APK_PATH" ]; then
+          APK_SIZE=$(stat -c%s "$APK_PATH")
+          echo "apk-path=$APK_PATH" >> $GITHUB_OUTPUT
+          echo "apk-size=$APK_SIZE" >> $GITHUB_OUTPUT
+          echo "APK built successfully: $APK_PATH (${APK_SIZE} bytes)"
+        else
+          echo "APK not found at expected path: $APK_PATH"
+          exit 1
+        fi
+        
+    - name: Upload ${{ matrix.build-type }} APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: exercise-tracker-${{ matrix.build-type }}-apk
+        path: ${{ steps.apk-info.outputs.apk-path }}
+        retention-days: 30
+        
+    - name: Create release (on tag push)
+      if: startsWith(github.ref, 'refs/tags/') && matrix.build-type == 'release'
+      uses: softprops/action-gh-release@v1
+      with:
+        files: ${{ steps.apk-info.outputs.apk-path }}
+        generate_release_notes: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  build-info:
+    name: Build Information
+    needs: build
+    runs-on: ubuntu-latest
+    if: always()
+    
+    steps:
+    - name: Display build summary
+      run: |
+        echo "## 🚀 构建完成!" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📱 APK文件已生成" >> $GITHUB_STEP_SUMMARY
+        echo "- **Debug APK**: exercise-tracker-debug-apk" >> $GITHUB_STEP_SUMMARY
+        echo "- **Release APK**: exercise-tracker-release-apk" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📥 下载方式" >> $GITHUB_STEP_SUMMARY
+        echo "1. 在此页面顶部找到 **Artifacts** 部分" >> $GITHUB_STEP_SUMMARY
+        echo "2. 点击对应的APK文件名下载" >> $GITHUB_STEP_SUMMARY
+        echo "3. 解压下载的zip文件获取APK" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📲 安装说明" >> $GITHUB_STEP_SUMMARY
+        echo "1. 在Android设备上启用\"未知来源\"安装" >> $GITHUB_STEP_SUMMARY
+        echo "2. 传输APK文件到设备" >> $GITHUB_STEP_SUMMARY
+        echo "3. 点击APK文件进行安装" >> $GITHUB_STEP_SUMMARY

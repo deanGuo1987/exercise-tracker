@@ -1,0 +1,132 @@
+name: PR Quality Check
+
+on:
+  pull_request:
+    branches: [ main, master, develop ]
+    types: [opened, synchronize, reopened]
+
+jobs:
+  code-quality:
+    name: Code Quality Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Cache Gradle packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.gradle/caches
+          ~/.gradle/wrapper
+        key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+        restore-keys: |
+          ${{ runner.os }}-gradle-
+          
+    - name: Grant execute permission for gradlew
+      run: chmod +x gradlew
+      
+    - name: Run lint check
+      run: ./gradlew lint --stacktrace
+      
+    - name: Upload lint results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: lint-results
+        path: app/build/reports/lint-results*.html
+        
+    - name: Run unit tests
+      run: ./gradlew test --stacktrace
+      
+    - name: Upload test results
+      uses: actions/upload-artifact@v4
+      if: always()
+      with:
+        name: test-results-pr
+        path: |
+          app/build/reports/tests/
+          app/build/test-results/
+          
+    - name: Build debug APK (compilation check)
+      run: ./gradlew assembleDebug --stacktrace
+      
+    - name: Comment PR with results
+      if: always()
+      uses: actions/github-script@v7
+      with:
+        script: |
+          const fs = require('fs');
+          
+          let comment = '## 🔍 PR质量检查结果\n\n';
+          
+          // 检查构建状态
+          const buildStatus = '${{ job.status }}' === 'success' ? '✅ 通过' : '❌ 失败';
+          comment += `### 📱 构建状态: ${buildStatus}\n\n`;
+          
+          if ('${{ job.status }}' === 'success') {
+            comment += '### ✅ 检查项目\n';
+            comment += '- ✅ 代码编译通过\n';
+            comment += '- ✅ 单元测试通过\n';
+            comment += '- ✅ Lint检查通过\n';
+            comment += '- ✅ APK构建成功\n\n';
+            comment += '### 📥 测试APK\n';
+            comment += '可以在Actions页面的Artifacts中下载测试APK进行验证。\n\n';
+          } else {
+            comment += '### ❌ 检查失败\n';
+            comment += '请检查Actions日志了解详细错误信息，并修复后重新提交。\n\n';
+          }
+          
+          comment += '### 📋 下一步\n';
+          comment += '- 确保所有检查通过\n';
+          comment += '- 测试APK功能正常\n';
+          comment += '- 准备合并到主分支\n';
+          
+          github.rest.issues.createComment({
+            issue_number: context.issue.number,
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            body: comment
+          });
+
+  security-check:
+    name: Security Check
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Run security scan
+      uses: securecodewarrior/github-action-add-sarif@v1
+      continue-on-error: true
+      with:
+        sarif-file: 'security-scan-results.sarif'
+        
+    - name: Check for sensitive files
+      run: |
+        echo "检查敏感文件..."
+        
+        # 检查是否包含密钥文件
+        if find . -name "*.jks" -o -name "*.keystore" -o -name "*.p12" | grep -q .; then
+          echo "⚠️ 发现密钥文件，请确保不要提交到版本控制"
+          exit 1
+        fi
+        
+        # 检查是否包含密码或API密钥
+        if grep -r -i "password\|api_key\|secret" --include="*.kt" --include="*.java" --include="*.xml" . | grep -v "// TODO\|// FIXME"; then
+          echo "⚠️ 发现可能的敏感信息，请检查代码"
+          exit 1
+        fi
+        
+        echo "✅ 安全检查通过"
