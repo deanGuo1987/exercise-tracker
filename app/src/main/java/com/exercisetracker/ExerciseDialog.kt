@@ -68,6 +68,7 @@ class ExerciseDialog : DialogFragment() {
                 // 用户选择"否"，创建未运动记录
                 // 需求: 2.6 - 当用户选择"否"时，创建标记为未运动的运动记录
                 callback?.invoke(false, null)
+                dismiss()
             }
             .setCancelable(true)
             .create()
@@ -78,6 +79,7 @@ class ExerciseDialog : DialogFragment() {
      * 需求: 2.3, 2.4 - 显示运动时长选择界面，提供20分钟、30分钟、40分钟三个预设选项
      */
     private fun showDurationOptions() {
+        // 不要dismiss当前对话框，而是在同一个fragment中创建新的对话框
         val dateString = selectedDate?.let { dateFormat.format(it) } ?: "未知日期"
         
         val durationOptions = arrayOf(
@@ -88,39 +90,45 @@ class ExerciseDialog : DialogFragment() {
         
         val durationValues = arrayOf(20, 30, 40)
         
-        // 关闭当前对话框
-        dismiss()
-        
-        // 创建新的时长选择对话框
-        AlertDialog.Builder(requireContext())
-            .setTitle(getString(R.string.duration_question))
-            .setMessage("选择 $dateString 的运动时长：")
-            .setItems(durationOptions) { _, which ->
-                // 用户选择了时长，创建运动记录
-                val selectedDuration = durationValues[which]
-                callback?.invoke(true, selectedDuration)
-            }
-            .setCancelable(true)
-            .setNegativeButton("返回") { _, _ ->
-                // 如果用户取消时长选择，回到运动选择界面
-                val newDialog = ExerciseDialog.newInstance(selectedDate!!, callback!!)
-                newDialog.show(parentFragmentManager, "ExerciseDialog")
-            }
-            .show()
+        // 使用post确保在UI线程中执行
+        requireActivity().runOnUiThread {
+            AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.duration_question))
+                .setMessage("选择 $dateString 的运动时长：")
+                .setItems(durationOptions) { _, which ->
+                    // 用户选择了时长，创建运动记录
+                    val selectedDuration = durationValues[which]
+                    callback?.invoke(true, selectedDuration)
+                    dismiss()
+                }
+                .setCancelable(true)
+                .setNegativeButton("返回") { _, _ ->
+                    // 如果用户取消时长选择，回到运动选择界面
+                    showExerciseOptionsAgain()
+                }
+                .show()
+        }
     }
     
     /**
-     * 显示对话框的便捷方法
-     * @param date 选择的日期
-     * @param callback 选择结果回调函数
+     * 重新显示运动选择界面
      */
-    fun show(date: Date, callback: (Boolean, Int?) -> Unit) {
-        this.selectedDate = date
-        this.callback = callback
+    private fun showExerciseOptionsAgain() {
+        val dateString = selectedDate?.let { dateFormat.format(it) } ?: "未知日期"
         
-        // 更新arguments以保持状态一致性
-        arguments = Bundle().apply {
-            putLong(ARG_DATE, date.time)
+        requireActivity().runOnUiThread {
+            AlertDialog.Builder(requireContext())
+                .setTitle(getString(R.string.exercise_dialog_title))
+                .setMessage("${dateString}\n${getString(R.string.exercise_question)}")
+                .setPositiveButton(getString(R.string.yes)) { _, _ ->
+                    showDurationOptions()
+                }
+                .setNegativeButton(getString(R.string.no)) { _, _ ->
+                    callback?.invoke(false, null)
+                    dismiss()
+                }
+                .setCancelable(true)
+                .show()
         }
     }
 }
