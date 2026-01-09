@@ -7,6 +7,9 @@ on:
     branches: [ main, master, develop ]
   workflow_dispatch:
 
+env:
+  GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.parallel=false"
+
 jobs:
   build:
     name: Build APK
@@ -35,11 +38,24 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-gradle-
           
+    - name: Validate Gradle wrapper
+      uses: gradle/wrapper-validation-action@v1
+      
     - name: Grant execute permission for gradlew
       run: chmod +x gradlew
       
-    - name: Clean and build debug APK
-      run: ./gradlew clean assembleDebug --stacktrace
+    - name: Debug gradle wrapper
+      run: |
+        echo "Checking gradle wrapper..."
+        ls -la gradlew
+        ls -la gradle/wrapper/
+        cat gradle/wrapper/gradle-wrapper.properties
+        
+    - name: Clean project
+      run: ./gradlew clean --no-daemon --stacktrace --info
+      
+    - name: Build debug APK
+      run: ./gradlew assembleDebug --no-daemon --stacktrace --info
         
     - name: Upload debug APK
       uses: actions/upload-artifact@v4
