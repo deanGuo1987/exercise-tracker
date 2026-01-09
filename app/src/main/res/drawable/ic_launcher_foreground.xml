@@ -3,10 +3,64 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-  <path android:fillColor="#3DDC84"
+  <!-- 背景圆形 -->
+  <path android:fillColor="#4CAF50"
         android:pathData="M0,0h108v108h-108z"/>
-  <path android:fillColor="#00000000"
-        android:pathData="M9,0L9,108L99,108L99,0L9,0ZM54,94C32.46,94 15,76.54 15,55C15,33.46 32.46,16 54,16C75.54,16 93,33.46 93,55C93,76.54 75.54,94 54,94Z"/>
-  <path android:fillColor="#FFFFFF"
-        android:pathData="M54,21C70.02,21 83,33.98 83,50C83,66.02 70.02,79 54,79C37.98,79 25,66.02 25,50C25,33.98 37.98,21 54,21Z"/>
+  
+  <!-- 运动人形图标 -->
+  <group android:translateX="54" android:translateY="54">
+    <!-- 头部 -->
+    <circle android:fillColor="#FFFFFF"
+            android:cx="0" android:cy="-20"
+            android:radius="8"/>
+    
+    <!-- 身体 -->
+    <path android:fillColor="#FFFFFF"
+          android:pathData="M-3,-12 L3,-12 L4,8 L-4,8 Z"/>
+    
+    <!-- 左臂 -->
+    <path android:fillColor="#FFFFFF"
+          android:pathData="M-3,-8 L-12,-4 L-10,-1 L-3,-5 Z"/>
+    
+    <!-- 右臂 -->
+    <path android:fillColor="#FFFFFF"
+          android:pathData="M3,-8 L12,-4 L10,-1 L3,-5 Z"/>
+    
+    <!-- 左腿 -->
+    <path android:fillColor="#FFFFFF"
+          android:pathData="M-2,8 L-8,20 L-5,22 L-1,10 Z"/>
+    
+    <!-- 右腿 -->
+    <path android:fillColor="#FFFFFF"
+          android:pathData="M2,8 L8,20 L5,22 L1,10 Z"/>
+    
+    <!-- 哑铃装饰 -->
+    <circle android:fillColor="#FFC107"
+            android:cx="-12" android:cy="-4"
+            android:radius="2"/>
+    <circle android:fillColor="#FFC107"
+            android:cx="12" android:cy="-4"
+            android:radius="2"/>
+  </group>
+  
+  <!-- 日历装饰 -->
+  <group android:translateX="20" android:translateY="20">
+    <rect android:fillColor="#FFFFFF"
+          android:width="16" android:height="12"
+          android:x="0" android:y="0"
+          android:rx="2"/>
+    <rect android:fillColor="#FF5722"
+          android:width="16" android:height="3"
+          android:x="0" android:y="0"
+          android:rx="2"/>
+    <rect android:fillColor="#FF5722"
+          android:width="2" android:height="2"
+          android:x="2" android:y="5"/>
+    <rect android:fillColor="#FF5722"
+          android:width="2" android:height="2"
+          android:x="6" android:y="5"/>
+    <rect android:fillColor="#FF5722"
+          android:width="2" android:height="2"
+          android:x="10" android:y="5"/>
+  </group>
 </vector>

@@ -62,6 +62,13 @@ class MainActivity : AppCompatActivity() {
     private fun initializeViews() {
         calendarView = findViewById(R.id.calendarView)
         calendarContainer = findViewById(R.id.main_container)
+        
+        // 设置日历的样式
+        calendarView.apply {
+            // 设置日历的最小和最大日期（可选）
+            // minDate = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
+            // maxDate = Calendar.getInstance().apply { add(Calendar.YEAR, 1) }.timeInMillis
+        }
     }
     
     /**
@@ -216,12 +223,13 @@ class MainActivity : AppCompatActivity() {
     private fun addExerciseIndicator(record: ExerciseRecord) {
         // 创建显示运动信息的TextView
         val indicator = TextView(this).apply {
-            text = record.getDisplayText()
-            setTextColor(Color.RED)
+            text = "${record.duration}分钟"
+            setTextColor(Color.WHITE)
             textSize = 10f
-            background = ColorDrawable(Color.WHITE)
-            setPadding(4, 2, 4, 2)
+            background = ColorDrawable(Color.parseColor("#FF4CAF50")) // 使用绿色背景
+            setPadding(6, 3, 6, 3)
             alpha = 0.9f
+            setTypeface(null, android.graphics.Typeface.BOLD)
         }
         
         // 将指示器添加到容器中

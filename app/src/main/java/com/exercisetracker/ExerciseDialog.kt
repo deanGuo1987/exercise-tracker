@@ -88,20 +88,24 @@ class ExerciseDialog : DialogFragment() {
         
         val durationValues = arrayOf(20, 30, 40)
         
+        // 关闭当前对话框
+        dismiss()
+        
+        // 创建新的时长选择对话框
         AlertDialog.Builder(requireContext())
             .setTitle(getString(R.string.duration_question))
-            .setMessage(dateString)
+            .setMessage("选择 $dateString 的运动时长：")
             .setItems(durationOptions) { _, which ->
                 // 用户选择了时长，创建运动记录
                 val selectedDuration = durationValues[which]
                 callback?.invoke(true, selectedDuration)
             }
             .setCancelable(true)
-            .setOnCancelListener {
+            .setNegativeButton("返回") { _, _ ->
                 // 如果用户取消时长选择，回到运动选择界面
-                showExerciseOptions().show()
+                val newDialog = ExerciseDialog.newInstance(selectedDate!!, callback!!)
+                newDialog.show(parentFragmentManager, "ExerciseDialog")
             }
-            .create()
             .show()
     }
     
