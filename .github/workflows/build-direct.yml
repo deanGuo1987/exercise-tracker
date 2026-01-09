@@ -1,0 +1,48 @@
+name: Direct Gradle Build (No Wrapper)
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+        
+    - name: Setup Android SDK
+      uses: android-actions/setup-android@v3
+      
+    - name: Setup Gradle
+      uses: gradle/gradle-build-action@v2
+      with:
+        gradle-version: 8.5
+        
+    - name: Debug environment
+      run: |
+        echo "Working directory: $(pwd)"
+        echo "Java version: $(java -version)"
+        echo "Gradle version: $(gradle --version)"
+        echo "Files in project root:"
+        ls -la
+        echo "Settings file content:"
+        cat settings.gradle
+        
+    - name: Build APK
+      run: gradle clean assembleDebug --no-daemon --stacktrace --info
+        
+    - name: Upload APK
+      uses: actions/upload-artifact@v4
+      with:
+        name: exercise-tracker-direct-apk
+        path: app/build/outputs/apk/debug/app-debug.apk
+        retention-days: 30
