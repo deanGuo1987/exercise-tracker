@@ -31,7 +31,6 @@ class MainActivity : AppCompatActivity() {
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val exerciseIndicators = mutableMapOf<String, TextView>()
     private val overlayMarkers = mutableMapOf<String, View>()
-    private val exerciseIndicators = mutableMapOf<String, TextView>()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
