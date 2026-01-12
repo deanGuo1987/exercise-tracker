@@ -212,11 +212,9 @@ class MainActivity : AppCompatActivity() {
         // 获取当月的所有运动记录
         val monthlyRecords = exerciseRecordManager.getRecordsInRange(startOfMonth, endOfMonth)
         
-        // 为每个有运动记录的日期添加标记
+        // 为每个运动记录添加标记（包括已运动和未运动）
         monthlyRecords.forEach { record ->
-            if (record.exercised && record.duration != null) {
-                addExerciseIndicator(record)
-            }
+            addExerciseIndicator(record)
         }
     }
     
@@ -225,12 +223,21 @@ class MainActivity : AppCompatActivity() {
      * @param record 运动记录
      */
     private fun addExerciseIndicator(record: ExerciseRecord) {
+        // 根据运动状态设置不同的显示内容和颜色
+        val (text, backgroundColor) = if (record.exercised && record.duration != null) {
+            // 已运动：显示时长，使用绿色背景
+            "${record.duration}分钟" to "#FF4CAF50"
+        } else {
+            // 未运动：显示"未运动"，使用灰色背景
+            "未运动" to "#FF757575"
+        }
+        
         // 创建显示运动信息的TextView
         val indicator = TextView(this).apply {
-            text = "${record.duration}分钟"
+            this.text = text
             setTextColor(Color.WHITE)
             textSize = 10f
-            background = ColorDrawable(Color.parseColor("#FF4CAF50")) // 使用绿色背景
+            background = ColorDrawable(Color.parseColor(backgroundColor))
             setPadding(6, 3, 6, 3)
             alpha = 0.9f
             setTypeface(null, android.graphics.Typeface.BOLD)

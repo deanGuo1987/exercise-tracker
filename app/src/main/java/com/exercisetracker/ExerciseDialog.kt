@@ -51,62 +51,57 @@ class ExerciseDialog : DialogFragment() {
     }
     
     /**
-     * 显示运动选择界面 - 使用按钮而不是列表
+     * 显示运动选择界面 - 将所有选项放在一个对话框中
      * 需求: 2.2, 2.3, 2.4, 2.6 - 提供运动选择和时长选择
      */
     private fun showExerciseOptions(): AlertDialog {
         val dateString = selectedDate?.let { dateFormat.format(it) } ?: "未知日期"
         
+        // 选项数组：包含"未运动"和三个运动时长选项
+        val options = arrayOf(
+            "未运动",
+            "运动 20分钟",
+            "运动 30分钟", 
+            "运动 40分钟"
+        )
+        
         // 添加调试日志
-        android.util.Log.d("ExerciseDialog", "创建对话框，日期: $dateString")
+        android.util.Log.d("ExerciseDialog", "创建对话框，日期: $dateString, 选项数量: ${options.size}")
         
         return AlertDialog.Builder(requireContext())
             .setTitle(getString(R.string.exercise_dialog_title))
             .setMessage("$dateString\n请选择今天的运动情况：")
-            .setPositiveButton("运动 20分钟") { _, _ ->
-                android.util.Log.d("ExerciseDialog", "选择：运动 20分钟")
-                callback?.invoke(true, 20)
+            .setItems(options) { _, which ->
+                android.util.Log.d("ExerciseDialog", "用户选择了选项: $which")
+                when (which) {
+                    0 -> {
+                        // 用户选择"未运动"
+                        android.util.Log.d("ExerciseDialog", "选择：未运动")
+                        callback?.invoke(false, null)
+                    }
+                    1 -> {
+                        // 用户选择"运动 20分钟"
+                        android.util.Log.d("ExerciseDialog", "选择：运动 20分钟")
+                        callback?.invoke(true, 20)
+                    }
+                    2 -> {
+                        // 用户选择"运动 30分钟"
+                        android.util.Log.d("ExerciseDialog", "选择：运动 30分钟")
+                        callback?.invoke(true, 30)
+                    }
+                    3 -> {
+                        // 用户选择"运动 40分钟"
+                        android.util.Log.d("ExerciseDialog", "选择：运动 40分钟")
+                        callback?.invoke(true, 40)
+                    }
+                }
                 dismiss()
-            }
-            .setNegativeButton("未运动") { _, _ ->
-                android.util.Log.d("ExerciseDialog", "选择：未运动")
-                callback?.invoke(false, null)
-                dismiss()
-            }
-            .setNeutralButton("更多选项") { _, _ ->
-                // 显示更多运动时长选项
-                showMoreDurationOptions()
             }
             .setCancelable(true)
+            .setNegativeButton("取消") { _, _ ->
+                android.util.Log.d("ExerciseDialog", "用户取消了对话框")
+                dismiss()
+            }
             .create()
-    }
-    
-    /**
-     * 显示更多运动时长选项
-     */
-    private fun showMoreDurationOptions() {
-        val dateString = selectedDate?.let { dateFormat.format(it) } ?: "未知日期"
-        
-        android.util.Log.d("ExerciseDialog", "显示更多时长选项")
-        
-        AlertDialog.Builder(requireContext())
-            .setTitle("选择运动时长")
-            .setMessage("$dateString\n请选择运动时长：")
-            .setPositiveButton("30分钟") { _, _ ->
-                android.util.Log.d("ExerciseDialog", "选择：运动 30分钟")
-                callback?.invoke(true, 30)
-                dismiss()
-            }
-            .setNegativeButton("40分钟") { _, _ ->
-                android.util.Log.d("ExerciseDialog", "选择：运动 40分钟")
-                callback?.invoke(true, 40)
-                dismiss()
-            }
-            .setNeutralButton("返回") { _, _ ->
-                // 重新显示主选择对话框
-                showExerciseOptions().show()
-            }
-            .setCancelable(true)
-            .show()
     }
 }
