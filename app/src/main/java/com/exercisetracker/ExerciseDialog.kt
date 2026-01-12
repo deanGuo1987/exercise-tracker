@@ -3,6 +3,9 @@ package com.exercisetracker
 import android.app.AlertDialog
 import android.app.Dialog
 import android.os.Bundle
+import android.view.LayoutInflater
+import android.widget.Button
+import android.widget.TextView
 import androidx.fragment.app.DialogFragment
 import java.text.SimpleDateFormat
 import java.util.Date
@@ -47,61 +50,74 @@ class ExerciseDialog : DialogFragment() {
     }
     
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
-        return showExerciseOptions()
+        return createCustomDialog()
     }
     
     /**
-     * 显示运动选择界面 - 将所有选项放在一个对话框中
-     * 需求: 2.2, 2.3, 2.4, 2.6 - 提供运动选择和时长选择
+     * 创建自定义对话框
+     * 使用自定义布局确保所有选项都能正确显示
      */
-    private fun showExerciseOptions(): AlertDialog {
+    private fun createCustomDialog(): AlertDialog {
         val dateString = selectedDate?.let { dateFormat.format(it) } ?: "未知日期"
         
-        // 选项数组：包含"未运动"和三个运动时长选项
-        val options = arrayOf(
-            "未运动",
-            "运动 20分钟",
-            "运动 30分钟", 
-            "运动 40分钟"
-        )
+        android.util.Log.d("ExerciseDialog", "创建自定义对话框，日期: $dateString")
         
-        // 添加调试日志
-        android.util.Log.d("ExerciseDialog", "创建对话框，日期: $dateString, 选项数量: ${options.size}")
+        // 加载自定义布局
+        val inflater = LayoutInflater.from(requireContext())
+        val dialogView = inflater.inflate(R.layout.dialog_exercise_selection, null)
         
-        return AlertDialog.Builder(requireContext())
-            .setTitle(getString(R.string.exercise_dialog_title))
-            .setMessage("$dateString\n请选择今天的运动情况：")
-            .setItems(options) { _, which ->
-                android.util.Log.d("ExerciseDialog", "用户选择了选项: $which")
-                when (which) {
-                    0 -> {
-                        // 用户选择"未运动"
-                        android.util.Log.d("ExerciseDialog", "选择：未运动")
-                        callback?.invoke(false, null)
-                    }
-                    1 -> {
-                        // 用户选择"运动 20分钟"
-                        android.util.Log.d("ExerciseDialog", "选择：运动 20分钟")
-                        callback?.invoke(true, 20)
-                    }
-                    2 -> {
-                        // 用户选择"运动 30分钟"
-                        android.util.Log.d("ExerciseDialog", "选择：运动 30分钟")
-                        callback?.invoke(true, 30)
-                    }
-                    3 -> {
-                        // 用户选择"运动 40分钟"
-                        android.util.Log.d("ExerciseDialog", "选择：运动 40分钟")
-                        callback?.invoke(true, 40)
-                    }
-                }
-                dismiss()
-            }
+        // 设置日期信息
+        val messageTextView = dialogView.findViewById<TextView>(R.id.dialog_message)
+        messageTextView.text = "$dateString\n请选择今天的运动情况："
+        
+        // 创建对话框
+        val dialog = AlertDialog.Builder(requireContext())
+            .setView(dialogView)
             .setCancelable(true)
-            .setNegativeButton("取消") { _, _ ->
-                android.util.Log.d("ExerciseDialog", "用户取消了对话框")
-                dismiss()
-            }
             .create()
+        
+        // 设置按钮点击事件
+        setupButtonClickListeners(dialogView, dialog)
+        
+        return dialog
+    }
+    
+    /**
+     * 设置按钮点击事件
+     */
+    private fun setupButtonClickListeners(dialogView: android.view.View, dialog: AlertDialog) {
+        // 未运动按钮
+        dialogView.findViewById<Button>(R.id.btn_no_exercise).setOnClickListener {
+            android.util.Log.d("ExerciseDialog", "选择：未运动")
+            callback?.invoke(false, null)
+            dialog.dismiss()
+        }
+        
+        // 运动 20分钟按钮
+        dialogView.findViewById<Button>(R.id.btn_exercise_20).setOnClickListener {
+            android.util.Log.d("ExerciseDialog", "选择：运动 20分钟")
+            callback?.invoke(true, 20)
+            dialog.dismiss()
+        }
+        
+        // 运动 30分钟按钮
+        dialogView.findViewById<Button>(R.id.btn_exercise_30).setOnClickListener {
+            android.util.Log.d("ExerciseDialog", "选择：运动 30分钟")
+            callback?.invoke(true, 30)
+            dialog.dismiss()
+        }
+        
+        // 运动 40分钟按钮
+        dialogView.findViewById<Button>(R.id.btn_exercise_40).setOnClickListener {
+            android.util.Log.d("ExerciseDialog", "选择：运动 40分钟")
+            callback?.invoke(true, 40)
+            dialog.dismiss()
+        }
+        
+        // 取消按钮
+        dialogView.findViewById<Button>(R.id.btn_cancel).setOnClickListener {
+            android.util.Log.d("ExerciseDialog", "用户取消了对话框")
+            dialog.dismiss()
+        }
     }
 }
