@@ -45,9 +45,9 @@
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/titleText" />
 
-    <!-- 日历视图 -->
-    <com.prolificinteractive.materialcalendarview.MaterialCalendarView
-        android:id="@+id/calendarView"
+    <!-- 日历容器 -->
+    <FrameLayout
+        android:id="@+id/calendarContainer"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="16dp"
@@ -60,12 +60,22 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/instructionText"
-        app:layout_constraintVertical_weight="2"
-        app:mcv_showOtherDates="all"
-        app:mcv_selectionColor="@color/exercise_green"
-        app:mcv_weekDayTextAppearance="@style/CalendarWeekDayTextAppearance"
-        app:mcv_dateTextAppearance="@style/CalendarDateTextAppearance"
-        app:mcv_headerTextAppearance="@style/CalendarHeaderTextAppearance" />
+        app:layout_constraintVertical_weight="2">
+
+        <!-- 标准日历视图 -->
+        <CalendarView
+            android:id="@+id/calendarView"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent" />
+
+        <!-- 覆盖层用于显示运动标记 -->
+        <FrameLayout
+            android:id="@+id/calendarOverlay"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:background="@android:color/transparent" />
+
+    </FrameLayout>
 
     <!-- 运动记录列表区域 -->
     <ScrollView
@@ -82,7 +92,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/calendarView"
+        app:layout_constraintTop_toBottomOf="@+id/calendarContainer"
         app:layout_constraintVertical_weight="1">
 
         <LinearLayout

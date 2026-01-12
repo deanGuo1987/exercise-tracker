@@ -2,17 +2,17 @@ package com.exercisetracker
 
 import android.graphics.Color
 import android.graphics.drawable.ColorDrawable
+import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
+import android.widget.CalendarView
+import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
-import com.prolificinteractive.materialcalendarview.CalendarDay
-import com.prolificinteractive.materialcalendarview.MaterialCalendarView
-import com.prolificinteractive.materialcalendarview.OnDateSelectedListener
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -23,16 +23,14 @@ import java.util.Locale
  */
 class MainActivity : AppCompatActivity() {
     
-    private lateinit var calendarView: MaterialCalendarView
+    private lateinit var calendarView: CalendarView
     private lateinit var exerciseRecordManager: ExerciseRecordManager
-    private lateinit var calendarContainer: ConstraintLayout
+    private lateinit var calendarContainer: FrameLayout
+    private lateinit var calendarOverlay: FrameLayout
     private lateinit var recordsContainer: LinearLayout
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val exerciseIndicators = mutableMapOf<String, TextView>()
-    
-    // 日历装饰器
-    private var exerciseDateDecorator: ExerciseDateDecorator? = null
-    private var noExerciseDateDecorator: NoExerciseDateDecorator? = null
+    private val overlayMarkers = mutableMapOf<String, View>()
     private val exerciseIndicators = mutableMapOf<String, TextView>()
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -71,7 +69,8 @@ class MainActivity : AppCompatActivity() {
      */
     private fun initializeViews() {
         calendarView = findViewById(R.id.calendarView)
-        calendarContainer = findViewById(R.id.main_container)
+        calendarContainer = findViewById(R.id.calendarContainer)
+        calendarOverlay = findViewById(R.id.calendarOverlay)
         recordsContainer = findViewById(R.id.recordsContainer)
         
         // 设置日历的样式
@@ -86,18 +85,21 @@ class MainActivity : AppCompatActivity() {
      * 设置日历点击监听器
      */
     private fun setupCalendarListener() {
-        calendarView.setOnDateChangedListener { widget, date, selected ->
-            // 将CalendarDay转换为Date
+        calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
+            // 创建Date对象 (month是0-based)
             val selectedDate = Calendar.getInstance().apply {
-                set(date.year, date.month - 1, date.day) // CalendarDay的month是1-based
+                set(year, month, dayOfMonth)
             }.time
             
             onCalendarDateClick(selectedDate)
         }
         
-        // 监听月份变化
-        calendarView.setOnMonthChangedListener { widget, date ->
-            onCalendarMonthChanged()
+        // 监听日历的布局变化以更新覆盖层
+        calendarView.viewTreeObserver.addOnGlobalLayoutListener {
+            // 延迟更新以确保日历布局完成
+            calendarView.post {
+                updateCalendarDisplay()
+            }
         }
     }
     
@@ -202,17 +204,18 @@ class MainActivity : AppCompatActivity() {
     
     /**
      * 更新日历显示
-     * 在日历上直接显示运动记录的颜色标记
+     * 在日历覆盖层上显示运动记录的颜色标记
      */
     fun updateCalendarDisplay() {
         android.util.Log.d("MainActivity", "开始更新日历显示")
         
-        // 清除现有的指示器
+        // 清除现有的指示器和覆盖层标记
         clearExerciseIndicators()
+        clearOverlayMarkers()
         
         // 获取当前显示月份的所有记录
         val currentDate = Calendar.getInstance().apply {
-            timeInMillis = calendarView.currentDate.calendar.timeInMillis
+            timeInMillis = calendarView.date
         }
         
         val startOfMonth = Calendar.getInstance().apply {
@@ -228,74 +231,111 @@ class MainActivity : AppCompatActivity() {
         val monthlyRecords = exerciseRecordManager.getRecordsInRange(startOfMonth, endOfMonth)
         android.util.Log.d("MainActivity", "找到 ${monthlyRecords.size} 条运动记录")
         
-        // 分离已运动和未运动的日期
-        val exerciseDates = mutableListOf<CalendarDay>()
-        val noExerciseDates = mutableListOf<CalendarDay>()
-        
+        // 为每个运动记录添加覆盖层标记
         monthlyRecords.forEach { record ->
-            try {
-                val date = dateFormat.parse(record.date)
-                if (date != null) {
-                    val calendar = Calendar.getInstance().apply { time = date }
-                    val calendarDay = CalendarDay.from(
-                        calendar.get(Calendar.YEAR),
-                        calendar.get(Calendar.MONTH) + 1, // CalendarDay使用1-based月份
-                        calendar.get(Calendar.DAY_OF_MONTH)
-                    )
-                    
-                    if (record.exercised) {
-                        exerciseDates.add(calendarDay)
-                    } else {
-                        noExerciseDates.add(calendarDay)
-                    }
-                }
-            } catch (e: Exception) {
-                android.util.Log.e("MainActivity", "解析日期失败: ${record.date}", e)
-            }
+            android.util.Log.d("MainActivity", "添加覆盖层标记: 日期=${record.date}, 运动=${record.exercised}")
+            addOverlayMarker(record)
         }
-        
-        // 更新日历装饰器
-        updateCalendarDecorators(exerciseDates, noExerciseDates)
         
         // 为每个运动记录添加到列表中
         monthlyRecords.forEach { record ->
-            android.util.Log.d("MainActivity", "添加标记: 日期=${record.date}, 运动=${record.exercised}, 时长=${record.duration}")
+            android.util.Log.d("MainActivity", "添加列表标记: 日期=${record.date}, 运动=${record.exercised}, 时长=${record.duration}")
             addExerciseIndicator(record)
         }
         
-        // 设置日历的选中日期颜色
+        // 更新说明文字
         updateCalendarColors(monthlyRecords)
         
         android.util.Log.d("MainActivity", "日历显示更新完成")
     }
     
     /**
-     * 更新日历装饰器
+     * 在日历覆盖层上添加运动标记
      */
-    private fun updateCalendarDecorators(exerciseDates: List<CalendarDay>, noExerciseDates: List<CalendarDay>) {
-        // 移除现有装饰器
-        exerciseDateDecorator?.let { calendarView.removeDecorator(it) }
-        noExerciseDateDecorator?.let { calendarView.removeDecorator(it) }
-        
-        // 创建并添加已运动日期装饰器
-        if (exerciseDates.isNotEmpty()) {
-            val exerciseDrawable = ContextCompat.getDrawable(this, R.drawable.exercise_date_background)
-            if (exerciseDrawable != null) {
-                exerciseDateDecorator = ExerciseDateDecorator(exerciseDrawable, exerciseDates)
-                calendarView.addDecorator(exerciseDateDecorator!!)
+    private fun addOverlayMarker(record: ExerciseRecord) {
+        try {
+            val date = dateFormat.parse(record.date) ?: return
+            val calendar = Calendar.getInstance().apply { time = date }
+            
+            // 计算日期在日历中的位置（这是一个近似计算）
+            val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
+            val firstDayOfMonth = Calendar.getInstance().apply {
+                set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), 1)
             }
+            val firstDayOfWeek = (firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - 1) % 7 // 0-based
+            
+            // 计算是第几周和第几列
+            val weekNumber = (dayOfMonth + firstDayOfWeek - 1) / 7
+            val columnNumber = (dayOfMonth + firstDayOfWeek - 1) % 7
+            
+            // 等待日历布局完成后再添加标记
+            calendarView.post {
+                if (calendarView.width > 0 && calendarView.height > 0) {
+                    addOverlayMarkerAtPosition(record, weekNumber, columnNumber)
+                }
+            }
+            
+        } catch (e: Exception) {
+            android.util.Log.e("MainActivity", "添加覆盖层标记失败: ${record.date}", e)
+        }
+    }
+    
+    /**
+     * 在指定位置添加覆盖层标记
+     */
+    private fun addOverlayMarkerAtPosition(record: ExerciseRecord, weekNumber: Int, columnNumber: Int) {
+        // 创建标记视图
+        val marker = View(this).apply {
+            val size = 32 // 标记大小
+            layoutParams = FrameLayout.LayoutParams(size, size)
+            
+            // 根据运动状态设置背景
+            val drawable = GradientDrawable().apply {
+                shape = GradientDrawable.OVAL
+                if (record.exercised) {
+                    setColor(ContextCompat.getColor(this@MainActivity, R.color.exercise_green))
+                    setStroke(2, ContextCompat.getColor(this@MainActivity, R.color.exercise_dark_green))
+                } else {
+                    setColor(ContextCompat.getColor(this@MainActivity, R.color.medium_gray))
+                    setStroke(2, ContextCompat.getColor(this@MainActivity, R.color.exercise_red))
+                }
+            }
+            background = drawable
+            alpha = 0.8f
         }
         
-        // 创建并添加未运动日期装饰器
-        if (noExerciseDates.isNotEmpty()) {
-            val noExerciseDrawable = ContextCompat.getDrawable(this, R.drawable.no_exercise_date_background)
-            if (noExerciseDrawable != null) {
-                noExerciseDateDecorator = NoExerciseDateDecorator(noExerciseDrawable, noExerciseDates)
-                calendarView.addDecorator(noExerciseDateDecorator!!)
-            }
-        }
+        // 计算标记位置
+        val calendarWidth = calendarView.width
+        val calendarHeight = calendarView.height
         
-        android.util.Log.d("MainActivity", "装饰器更新完成: 已运动=${exerciseDates.size}, 未运动=${noExerciseDates.size}")
+        // 估算日历内容区域（排除标题栏）
+        val headerHeight = calendarHeight * 0.15f // 估算标题栏高度
+        val contentHeight = calendarHeight - headerHeight
+        val cellWidth = calendarWidth / 7f
+        val cellHeight = contentHeight / 6f // 通常显示6周
+        
+        // 计算标记的中心位置
+        val x = (columnNumber * cellWidth + cellWidth / 2 - 16).toInt() // 16是标记半径
+        val y = (headerHeight + weekNumber * cellHeight + cellHeight / 2 - 16).toInt()
+        
+        // 设置标记位置
+        val layoutParams = marker.layoutParams as FrameLayout.LayoutParams
+        layoutParams.leftMargin = x
+        layoutParams.topMargin = y
+        
+        // 添加到覆盖层
+        calendarOverlay.addView(marker)
+        overlayMarkers[record.date] = marker
+        
+        android.util.Log.d("MainActivity", "覆盖层标记已添加: ${record.date} at ($x, $y)")
+    }
+    
+    /**
+     * 清除所有覆盖层标记
+     */
+    private fun clearOverlayMarkers() {
+        calendarOverlay.removeAllViews()
+        overlayMarkers.clear()
     }
     
     /**
