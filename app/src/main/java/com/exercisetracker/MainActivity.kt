@@ -148,14 +148,18 @@ class MainActivity : AppCompatActivity() {
      * 需求: 2.2, 2.3, 2.4 - 显示运动选择界面和时长选择界面
      */
     fun showExerciseDialog(date: Date) {
+        android.util.Log.d("MainActivity", "显示运动选择对话框，日期: ${dateFormat.format(date)}")
+        
         // 创建并显示运动选择对话框
         val dialog = ExerciseDialog.newInstance(date) { exercised, duration ->
             // 处理用户选择结果
+            android.util.Log.d("MainActivity", "收到对话框结果: exercised=$exercised, duration=$duration")
             onExerciseDialogResult(date, exercised, duration)
         }
         
         // 显示对话框
         dialog.show(supportFragmentManager, "ExerciseDialog")
+        android.util.Log.d("MainActivity", "对话框已调用show方法")
     }
     
     /**

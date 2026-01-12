@@ -65,25 +65,33 @@ class ExerciseDialog : DialogFragment() {
             "运动 40分钟"
         )
         
+        // 添加调试日志
+        android.util.Log.d("ExerciseDialog", "创建对话框，日期: $dateString, 选项数量: ${options.size}")
+        
         return AlertDialog.Builder(requireContext())
             .setTitle(getString(R.string.exercise_dialog_title))
             .setMessage("$dateString\n请选择今天的运动情况：")
-            .setItems(options) { _, which ->
+            .setItems(options) { dialog, which ->
+                android.util.Log.d("ExerciseDialog", "用户选择了选项: $which")
                 when (which) {
                     0 -> {
                         // 用户选择"未运动"
+                        android.util.Log.d("ExerciseDialog", "选择：未运动")
                         callback?.invoke(false, null)
                     }
                     1 -> {
                         // 用户选择"运动 20分钟"
+                        android.util.Log.d("ExerciseDialog", "选择：运动 20分钟")
                         callback?.invoke(true, 20)
                     }
                     2 -> {
                         // 用户选择"运动 30分钟"
+                        android.util.Log.d("ExerciseDialog", "选择：运动 30分钟")
                         callback?.invoke(true, 30)
                     }
                     3 -> {
                         // 用户选择"运动 40分钟"
+                        android.util.Log.d("ExerciseDialog", "选择：运动 40分钟")
                         callback?.invoke(true, 40)
                     }
                 }
@@ -91,6 +99,7 @@ class ExerciseDialog : DialogFragment() {
             }
             .setCancelable(true)
             .setNegativeButton("取消") { _, _ ->
+                android.util.Log.d("ExerciseDialog", "用户取消了对话框")
                 dismiss()
             }
             .create()
