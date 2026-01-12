@@ -51,84 +51,48 @@ class ExerciseDialog : DialogFragment() {
     }
     
     /**
-     * 显示运动选择界面（是/否）
-     * 需求: 2.2 - 提供"是"和"否"两个选项供用户选择是否运动
+     * 显示运动选择界面 - 将所有选项放在一个对话框中
+     * 需求: 2.2, 2.3, 2.4, 2.6 - 提供运动选择和时长选择
      */
     private fun showExerciseOptions(): AlertDialog {
         val dateString = selectedDate?.let { dateFormat.format(it) } ?: "未知日期"
         
+        // 选项数组：包含"未运动"和三个运动时长选项
+        val options = arrayOf(
+            "未运动",
+            "运动 20分钟",
+            "运动 30分钟", 
+            "运动 40分钟"
+        )
+        
         return AlertDialog.Builder(requireContext())
             .setTitle(getString(R.string.exercise_dialog_title))
-            .setMessage("${dateString}\n${getString(R.string.exercise_question)}")
-            .setPositiveButton(getString(R.string.yes)) { _, _ ->
-                // 用户选择"是"，显示时长选择界面
-                showDurationOptions()
-            }
-            .setNegativeButton(getString(R.string.no)) { _, _ ->
-                // 用户选择"否"，创建未运动记录
-                // 需求: 2.6 - 当用户选择"否"时，创建标记为未运动的运动记录
-                callback?.invoke(false, null)
+            .setMessage("$dateString\n请选择今天的运动情况：")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> {
+                        // 用户选择"未运动"
+                        callback?.invoke(false, null)
+                    }
+                    1 -> {
+                        // 用户选择"运动 20分钟"
+                        callback?.invoke(true, 20)
+                    }
+                    2 -> {
+                        // 用户选择"运动 30分钟"
+                        callback?.invoke(true, 30)
+                    }
+                    3 -> {
+                        // 用户选择"运动 40分钟"
+                        callback?.invoke(true, 40)
+                    }
+                }
                 dismiss()
             }
             .setCancelable(true)
+            .setNegativeButton("取消") { _, _ ->
+                dismiss()
+            }
             .create()
-    }
-    
-    /**
-     * 显示运动时长选择界面（20/30/40分钟）
-     * 需求: 2.3, 2.4 - 显示运动时长选择界面，提供20分钟、30分钟、40分钟三个预设选项
-     */
-    private fun showDurationOptions() {
-        // 不要dismiss当前对话框，而是在同一个fragment中创建新的对话框
-        val dateString = selectedDate?.let { dateFormat.format(it) } ?: "未知日期"
-        
-        val durationOptions = arrayOf(
-            getString(R.string.duration_20),
-            getString(R.string.duration_30),
-            getString(R.string.duration_40)
-        )
-        
-        val durationValues = arrayOf(20, 30, 40)
-        
-        // 使用post确保在UI线程中执行
-        requireActivity().runOnUiThread {
-            AlertDialog.Builder(requireContext())
-                .setTitle(getString(R.string.duration_question))
-                .setMessage("选择 $dateString 的运动时长：")
-                .setItems(durationOptions) { _, which ->
-                    // 用户选择了时长，创建运动记录
-                    val selectedDuration = durationValues[which]
-                    callback?.invoke(true, selectedDuration)
-                    dismiss()
-                }
-                .setCancelable(true)
-                .setNegativeButton("返回") { _, _ ->
-                    // 如果用户取消时长选择，回到运动选择界面
-                    showExerciseOptionsAgain()
-                }
-                .show()
-        }
-    }
-    
-    /**
-     * 重新显示运动选择界面
-     */
-    private fun showExerciseOptionsAgain() {
-        val dateString = selectedDate?.let { dateFormat.format(it) } ?: "未知日期"
-        
-        requireActivity().runOnUiThread {
-            AlertDialog.Builder(requireContext())
-                .setTitle(getString(R.string.exercise_dialog_title))
-                .setMessage("${dateString}\n${getString(R.string.exercise_question)}")
-                .setPositiveButton(getString(R.string.yes)) { _, _ ->
-                    showDurationOptions()
-                }
-                .setNegativeButton(getString(R.string.no)) { _, _ ->
-                    callback?.invoke(false, null)
-                    dismiss()
-                }
-                .setCancelable(true)
-                .show()
-        }
     }
 }
