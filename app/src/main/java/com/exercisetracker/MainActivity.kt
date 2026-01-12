@@ -170,19 +170,24 @@ class MainActivity : AppCompatActivity() {
      * 需求: 2.5, 2.6 - 创建运动记录并保存
      */
     private fun onExerciseDialogResult(date: Date, exercised: Boolean, duration: Int?) {
+        android.util.Log.d("MainActivity", "处理对话框结果: 日期=${dateFormat.format(date)}, 运动=$exercised, 时长=$duration")
+        
         try {
             // 创建运动记录
             val record = exerciseRecordManager.createRecord(date, exercised, duration)
+            android.util.Log.d("MainActivity", "创建记录: ${record.date}")
             
             // 保存记录到存储
             exerciseRecordManager.saveRecord(record)
+            android.util.Log.d("MainActivity", "记录已保存")
             
             // 刷新日历显示以显示新记录
             refreshCalendarAfterRecordCreation()
+            android.util.Log.d("MainActivity", "日历刷新完成")
             
         } catch (e: Exception) {
             // 处理记录创建或保存失败的情况
-            // 这里可以显示错误消息给用户
+            android.util.Log.e("MainActivity", "保存记录失败", e)
             e.printStackTrace()
         }
     }
@@ -192,6 +197,8 @@ class MainActivity : AppCompatActivity() {
      * 在日历上显示运动记录标记和时长信息
      */
     fun updateCalendarDisplay() {
+        android.util.Log.d("MainActivity", "开始更新日历显示")
+        
         // 清除现有的指示器
         clearExerciseIndicators()
         
@@ -211,11 +218,15 @@ class MainActivity : AppCompatActivity() {
         
         // 获取当月的所有运动记录
         val monthlyRecords = exerciseRecordManager.getRecordsInRange(startOfMonth, endOfMonth)
+        android.util.Log.d("MainActivity", "找到 ${monthlyRecords.size} 条运动记录")
         
         // 为每个运动记录添加标记（包括已运动和未运动）
         monthlyRecords.forEach { record ->
+            android.util.Log.d("MainActivity", "添加标记: 日期=${record.date}, 运动=${record.exercised}, 时长=${record.duration}")
             addExerciseIndicator(record)
         }
+        
+        android.util.Log.d("MainActivity", "日历显示更新完成")
     }
     
     /**
@@ -223,6 +234,8 @@ class MainActivity : AppCompatActivity() {
      * @param record 运动记录
      */
     private fun addExerciseIndicator(record: ExerciseRecord) {
+        android.util.Log.d("MainActivity", "创建标记: ${record.date}, 运动=${record.exercised}")
+        
         // 根据运动状态设置不同的显示内容和颜色
         val (text, backgroundColor) = if (record.exercised && record.duration != null) {
             // 已运动：显示时长，使用绿色背景
@@ -232,35 +245,38 @@ class MainActivity : AppCompatActivity() {
             "未运动" to "#FF757575"
         }
         
+        android.util.Log.d("MainActivity", "标记内容: $text, 颜色: $backgroundColor")
+        
         // 创建显示运动信息的TextView
         val indicator = TextView(this).apply {
             this.text = text
             setTextColor(Color.WHITE)
-            textSize = 10f
+            textSize = 12f  // 增大字体
             background = ColorDrawable(Color.parseColor(backgroundColor))
-            setPadding(6, 3, 6, 3)
-            alpha = 0.9f
+            setPadding(8, 4, 8, 4)  // 增大内边距
+            alpha = 1.0f  // 完全不透明
             setTypeface(null, android.graphics.Typeface.BOLD)
         }
         
-        // 将指示器添加到容器中
+        // 使用更简单的布局参数 - 先显示在日历下方作为测试
         val layoutParams = ConstraintLayout.LayoutParams(
             ConstraintLayout.LayoutParams.WRAP_CONTENT,
             ConstraintLayout.LayoutParams.WRAP_CONTENT
         )
         
-        // 尝试定位到对应的日期位置
-        // 注意：这是一个简化的实现，实际位置可能需要更精确的计算
-        layoutParams.topToTop = calendarView.id
+        // 暂时将标记显示在日历下方，便于调试
+        layoutParams.topToBottom = calendarView.id
         layoutParams.startToStart = calendarView.id
-        layoutParams.topMargin = calculateDateTopMargin(record.date)
-        layoutParams.marginStart = calculateDateStartMargin(record.date)
+        layoutParams.topMargin = 10
+        layoutParams.marginStart = exerciseIndicators.size * 120  // 水平排列
         
         indicator.layoutParams = layoutParams
         calendarContainer.addView(indicator)
         
         // 保存指示器引用以便后续清理
         exerciseIndicators[record.date] = indicator
+        
+        android.util.Log.d("MainActivity", "标记已添加到容器")
     }
     
     /**
