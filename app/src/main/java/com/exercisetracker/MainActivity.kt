@@ -6,6 +6,7 @@ import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
 import android.widget.CalendarView
+import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
@@ -22,6 +23,7 @@ class MainActivity : AppCompatActivity() {
     private lateinit var calendarView: CalendarView
     private lateinit var exerciseRecordManager: ExerciseRecordManager
     private lateinit var calendarContainer: ConstraintLayout
+    private lateinit var recordsContainer: LinearLayout
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val exerciseIndicators = mutableMapOf<String, TextView>()
     
@@ -62,6 +64,7 @@ class MainActivity : AppCompatActivity() {
     private fun initializeViews() {
         calendarView = findViewById(R.id.calendarView)
         calendarContainer = findViewById(R.id.main_container)
+        recordsContainer = findViewById(R.id.recordsContainer)
         
         // 设置日历的样式
         calendarView.apply {
@@ -194,7 +197,7 @@ class MainActivity : AppCompatActivity() {
     
     /**
      * 更新日历显示
-     * 在日历上显示运动记录标记和时长信息
+     * 在日历下方显示运动记录列表
      */
     fun updateCalendarDisplay() {
         android.util.Log.d("MainActivity", "开始更新日历显示")
@@ -220,11 +223,14 @@ class MainActivity : AppCompatActivity() {
         val monthlyRecords = exerciseRecordManager.getRecordsInRange(startOfMonth, endOfMonth)
         android.util.Log.d("MainActivity", "找到 ${monthlyRecords.size} 条运动记录")
         
-        // 为每个运动记录添加标记（包括已运动和未运动）
+        // 为每个运动记录添加标记
         monthlyRecords.forEach { record ->
             android.util.Log.d("MainActivity", "添加标记: 日期=${record.date}, 运动=${record.exercised}, 时长=${record.duration}")
             addExerciseIndicator(record)
         }
+        
+        // 设置日历的选中日期颜色
+        updateCalendarColors(monthlyRecords)
         
         android.util.Log.d("MainActivity", "日历显示更新完成")
     }
@@ -236,13 +242,21 @@ class MainActivity : AppCompatActivity() {
     private fun addExerciseIndicator(record: ExerciseRecord) {
         android.util.Log.d("MainActivity", "创建标记: ${record.date}, 运动=${record.exercised}")
         
+        // 解析日期并格式化显示
+        val date = dateFormat.parse(record.date)
+        val displayDate = if (date != null) {
+            SimpleDateFormat("MM-dd", Locale.getDefault()).format(date)
+        } else {
+            record.date
+        }
+        
         // 根据运动状态设置不同的显示内容和颜色
         val (text, backgroundColor) = if (record.exercised && record.duration != null) {
             // 已运动：显示时长，使用绿色背景
-            "${record.duration}分钟" to "#FF4CAF50"
+            "$displayDate - 运动 ${record.duration}分钟 ✓" to "#FF4CAF50"
         } else {
             // 未运动：显示"未运动"，使用灰色背景
-            "未运动" to "#FF757575"
+            "$displayDate - 未运动" to "#FF757575"
         }
         
         android.util.Log.d("MainActivity", "标记内容: $text, 颜色: $backgroundColor")
@@ -251,32 +265,51 @@ class MainActivity : AppCompatActivity() {
         val indicator = TextView(this).apply {
             this.text = text
             setTextColor(Color.WHITE)
-            textSize = 12f  // 增大字体
+            textSize = 14f
             background = ColorDrawable(Color.parseColor(backgroundColor))
-            setPadding(8, 4, 8, 4)  // 增大内边距
-            alpha = 1.0f  // 完全不透明
+            setPadding(16, 12, 16, 12)
+            alpha = 1.0f
             setTypeface(null, android.graphics.Typeface.BOLD)
+            
+            // 设置圆角背景
+            val drawable = background as ColorDrawable
+            val shape = android.graphics.drawable.GradientDrawable()
+            shape.setColor(Color.parseColor(backgroundColor))
+            shape.cornerRadius = 8f
+            background = shape
+            
+            // 设置边距
+            val layoutParams = LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT,
+                LinearLayout.LayoutParams.WRAP_CONTENT
+            )
+            layoutParams.setMargins(0, 4, 0, 4)
+            this.layoutParams = layoutParams
         }
         
-        // 使用更简单的布局参数 - 先显示在日历下方作为测试
-        val layoutParams = ConstraintLayout.LayoutParams(
-            ConstraintLayout.LayoutParams.WRAP_CONTENT,
-            ConstraintLayout.LayoutParams.WRAP_CONTENT
-        )
-        
-        // 暂时将标记显示在日历下方，便于调试
-        layoutParams.topToBottom = calendarView.id
-        layoutParams.startToStart = calendarView.id
-        layoutParams.topMargin = 10
-        layoutParams.marginStart = exerciseIndicators.size * 120  // 水平排列
-        
-        indicator.layoutParams = layoutParams
-        calendarContainer.addView(indicator)
+        // 添加到记录容器中
+        recordsContainer.addView(indicator)
         
         // 保存指示器引用以便后续清理
         exerciseIndicators[record.date] = indicator
         
-        android.util.Log.d("MainActivity", "标记已添加到容器")
+        android.util.Log.d("MainActivity", "标记已添加到记录容器")
+    }
+    
+    /**
+     * 更新日历颜色以突出显示有运动记录的日期
+     * @param records 运动记录列表
+     */
+    private fun updateCalendarColors(records: List<ExerciseRecord>) {
+        // 由于Android CalendarView的限制，我们无法直接修改日期的颜色
+        // 但我们可以通过其他方式提供视觉反馈
+        
+        // 更新说明文字以反映当前状态
+        val instructionText = findViewById<TextView>(R.id.instructionText)
+        val exercisedCount = records.count { it.exercised }
+        val totalCount = records.size
+        
+        instructionText.text = "点击日期记录运动情况\n本月已记录：$totalCount 天，运动：$exercisedCount 天"
     }
     
     /**
@@ -335,9 +368,35 @@ class MainActivity : AppCompatActivity() {
      * 清除所有运动指示器
      */
     private fun clearExerciseIndicators() {
-        exerciseIndicators.values.forEach { indicator ->
-            calendarContainer.removeView(indicator)
+        // 保存标题视图
+        val titleView = recordsContainer.findViewById<TextView>(R.id.recordsTitle)
+        
+        // 清除所有子视图
+        recordsContainer.removeAllViews()
+        
+        // 重新添加标题视图
+        if (titleView != null) {
+            recordsContainer.addView(titleView)
+        } else {
+            // 如果标题视图不存在，创建一个新的
+            val newTitleView = TextView(this).apply {
+                id = R.id.recordsTitle
+                text = "本月运动记录"
+                textSize = 16f
+                setTextColor(resources.getColor(R.color.exercise_dark_green, null))
+                setTypeface(null, android.graphics.Typeface.BOLD)
+                gravity = android.view.Gravity.CENTER
+                setPadding(8, 8, 8, 8)
+                
+                val layoutParams = LinearLayout.LayoutParams(
+                    LinearLayout.LayoutParams.MATCH_PARENT,
+                    LinearLayout.LayoutParams.WRAP_CONTENT
+                )
+                this.layoutParams = layoutParams
+            }
+            recordsContainer.addView(newTitleView)
         }
+        
         exerciseIndicators.clear()
     }
     
