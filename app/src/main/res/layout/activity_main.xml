@@ -46,7 +46,7 @@
         app:layout_constraintTop_toBottomOf="@+id/titleText" />
 
     <!-- 日历视图 -->
-    <CalendarView
+    <com.prolificinteractive.materialcalendarview.MaterialCalendarView
         android:id="@+id/calendarView"
         android:layout_width="0dp"
         android:layout_height="0dp"
@@ -60,7 +60,12 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/instructionText"
-        app:layout_constraintVertical_weight="2" />
+        app:layout_constraintVertical_weight="2"
+        app:mcv_showOtherDates="all"
+        app:mcv_selectionColor="@color/exercise_green"
+        app:mcv_weekDayTextAppearance="@style/CalendarWeekDayTextAppearance"
+        app:mcv_dateTextAppearance="@style/CalendarDateTextAppearance"
+        app:mcv_headerTextAppearance="@style/CalendarHeaderTextAppearance" />
 
     <!-- 运动记录列表区域 -->
     <ScrollView

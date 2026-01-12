@@ -5,11 +5,14 @@ import android.graphics.drawable.ColorDrawable
 import android.os.Bundle
 import android.view.View
 import android.view.ViewGroup
-import android.widget.CalendarView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.constraintlayout.widget.ConstraintLayout
+import androidx.core.content.ContextCompat
+import com.prolificinteractive.materialcalendarview.CalendarDay
+import com.prolificinteractive.materialcalendarview.MaterialCalendarView
+import com.prolificinteractive.materialcalendarview.OnDateSelectedListener
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Date
@@ -20,11 +23,16 @@ import java.util.Locale
  */
 class MainActivity : AppCompatActivity() {
     
-    private lateinit var calendarView: CalendarView
+    private lateinit var calendarView: MaterialCalendarView
     private lateinit var exerciseRecordManager: ExerciseRecordManager
     private lateinit var calendarContainer: ConstraintLayout
     private lateinit var recordsContainer: LinearLayout
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+    private val exerciseIndicators = mutableMapOf<String, TextView>()
+    
+    // 日历装饰器
+    private var exerciseDateDecorator: ExerciseDateDecorator? = null
+    private var noExerciseDateDecorator: NoExerciseDateDecorator? = null
     private val exerciseIndicators = mutableMapOf<String, TextView>()
     
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -78,21 +86,18 @@ class MainActivity : AppCompatActivity() {
      * 设置日历点击监听器
      */
     private fun setupCalendarListener() {
-        calendarView.setOnDateChangeListener { _, year, month, dayOfMonth ->
-            // 创建Date对象 (month是0-based，所以需要+1)
-            val selectedDate = java.util.Calendar.getInstance().apply {
-                set(year, month, dayOfMonth)
+        calendarView.setOnDateChangedListener { widget, date, selected ->
+            // 将CalendarDay转换为Date
+            val selectedDate = Calendar.getInstance().apply {
+                set(date.year, date.month - 1, date.day) // CalendarDay的month是1-based
             }.time
             
             onCalendarDateClick(selectedDate)
         }
         
-        // 监听日历的月份变化以更新显示
-        // 注意：CalendarView没有直接的月份变化监听器，
-        // 所以我们使用ViewTreeObserver来检测布局变化
-        calendarView.viewTreeObserver.addOnGlobalLayoutListener {
-            // 当布局完成后更新显示
-            updateCalendarDisplay()
+        // 监听月份变化
+        calendarView.setOnMonthChangedListener { widget, date ->
+            onCalendarMonthChanged()
         }
     }
     
@@ -197,7 +202,7 @@ class MainActivity : AppCompatActivity() {
     
     /**
      * 更新日历显示
-     * 在日历下方显示运动记录列表
+     * 在日历上直接显示运动记录的颜色标记
      */
     fun updateCalendarDisplay() {
         android.util.Log.d("MainActivity", "开始更新日历显示")
@@ -207,7 +212,7 @@ class MainActivity : AppCompatActivity() {
         
         // 获取当前显示月份的所有记录
         val currentDate = Calendar.getInstance().apply {
-            timeInMillis = calendarView.date
+            timeInMillis = calendarView.currentDate.calendar.timeInMillis
         }
         
         val startOfMonth = Calendar.getInstance().apply {
@@ -223,7 +228,36 @@ class MainActivity : AppCompatActivity() {
         val monthlyRecords = exerciseRecordManager.getRecordsInRange(startOfMonth, endOfMonth)
         android.util.Log.d("MainActivity", "找到 ${monthlyRecords.size} 条运动记录")
         
-        // 为每个运动记录添加标记
+        // 分离已运动和未运动的日期
+        val exerciseDates = mutableListOf<CalendarDay>()
+        val noExerciseDates = mutableListOf<CalendarDay>()
+        
+        monthlyRecords.forEach { record ->
+            try {
+                val date = dateFormat.parse(record.date)
+                if (date != null) {
+                    val calendar = Calendar.getInstance().apply { time = date }
+                    val calendarDay = CalendarDay.from(
+                        calendar.get(Calendar.YEAR),
+                        calendar.get(Calendar.MONTH) + 1, // CalendarDay使用1-based月份
+                        calendar.get(Calendar.DAY_OF_MONTH)
+                    )
+                    
+                    if (record.exercised) {
+                        exerciseDates.add(calendarDay)
+                    } else {
+                        noExerciseDates.add(calendarDay)
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("MainActivity", "解析日期失败: ${record.date}", e)
+            }
+        }
+        
+        // 更新日历装饰器
+        updateCalendarDecorators(exerciseDates, noExerciseDates)
+        
+        // 为每个运动记录添加到列表中
         monthlyRecords.forEach { record ->
             android.util.Log.d("MainActivity", "添加标记: 日期=${record.date}, 运动=${record.exercised}, 时长=${record.duration}")
             addExerciseIndicator(record)
@@ -233,6 +267,35 @@ class MainActivity : AppCompatActivity() {
         updateCalendarColors(monthlyRecords)
         
         android.util.Log.d("MainActivity", "日历显示更新完成")
+    }
+    
+    /**
+     * 更新日历装饰器
+     */
+    private fun updateCalendarDecorators(exerciseDates: List<CalendarDay>, noExerciseDates: List<CalendarDay>) {
+        // 移除现有装饰器
+        exerciseDateDecorator?.let { calendarView.removeDecorator(it) }
+        noExerciseDateDecorator?.let { calendarView.removeDecorator(it) }
+        
+        // 创建并添加已运动日期装饰器
+        if (exerciseDates.isNotEmpty()) {
+            val exerciseDrawable = ContextCompat.getDrawable(this, R.drawable.exercise_date_background)
+            if (exerciseDrawable != null) {
+                exerciseDateDecorator = ExerciseDateDecorator(exerciseDrawable, exerciseDates)
+                calendarView.addDecorator(exerciseDateDecorator!!)
+            }
+        }
+        
+        // 创建并添加未运动日期装饰器
+        if (noExerciseDates.isNotEmpty()) {
+            val noExerciseDrawable = ContextCompat.getDrawable(this, R.drawable.no_exercise_date_background)
+            if (noExerciseDrawable != null) {
+                noExerciseDateDecorator = NoExerciseDateDecorator(noExerciseDrawable, noExerciseDates)
+                calendarView.addDecorator(noExerciseDateDecorator!!)
+            }
+        }
+        
+        android.util.Log.d("MainActivity", "装饰器更新完成: 已运动=${exerciseDates.size}, 未运动=${noExerciseDates.size}")
     }
     
     /**

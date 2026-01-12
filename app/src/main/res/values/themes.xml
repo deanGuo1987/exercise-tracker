@@ -14,4 +14,19 @@
         <!-- Customize your theme here. -->
         <item name="android:windowBackground">@color/light_gray</item>
     </style>
+    
+    <!-- Calendar Styles -->
+    <style name="CalendarWeekDayTextAppearance" parent="TextAppearance.AppCompat.Caption">
+        <item name="android:textColor">@color/exercise_dark_green</item>
+        <item name="android:textStyle">bold</item>
+    </style>
+    
+    <style name="CalendarDateTextAppearance" parent="TextAppearance.AppCompat.Body1">
+        <item name="android:textColor">@color/black</item>
+    </style>
+    
+    <style name="CalendarHeaderTextAppearance" parent="TextAppearance.AppCompat.Headline">
+        <item name="android:textColor">@color/exercise_dark_green</item>
+        <item name="android:textStyle">bold</item>
+    </style>
 </resources>
