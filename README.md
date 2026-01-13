@@ -21,6 +21,12 @@
 - 支持20/30/40分钟预设时长
 - 可选择"是否运动"
 
+### 📊 运动报表
+- 按月和按年查看运动统计
+- 运动天数、运动率、运动时长分析
+- 连续运动天数统计
+- 详细数据可视化展示
+
 ### 💾 数据管理
 - 本地JSON文件存储
 - 支持最多1000条记录
@@ -107,7 +113,9 @@
 ```
 ├── app/src/main/java/com/exercisetracker/
 │   ├── MainActivity.kt              # 主界面控制器
+│   ├── ReportActivity.kt           # 报表界面控制器
 │   ├── ExerciseRecord.kt           # 运动记录数据模型
+│   ├── ExerciseReport.kt           # 报表数据模型和生成器
 │   ├── ExerciseRecordManager.kt    # 记录管理器
 │   ├── FileStorage.kt              # 文件存储服务
 │   ├── ExerciseDialog.kt           # 运动选择对话框
@@ -123,6 +131,7 @@
 
 - [构建说明](BUILD_INSTRUCTIONS.md) - 详细构建步骤
 - [部署指南](DEPLOYMENT_GUIDE.md) - APK获取和安装
+- [报表功能指南](REPORT_FEATURE_GUIDE.md) - 报表功能详细说明
 - [需求文档](.kiro/specs/exercise-tracker/requirements.md) - 功能需求
 - [设计文档](.kiro/specs/exercise-tracker/design.md) - 技术设计
 - [任务列表](.kiro/specs/exercise-tracker/tasks.md) - 开发任务
@@ -133,7 +142,16 @@
 2. **授予权限** - 允许通知权限
 3. **记录运动** - 点击日历日期选择运动时长
 4. **查看历史** - 在日历上查看运动记录标记
-5. **接收提醒** - 每天11:30收到运动提醒
+5. **查看报表** - 点击"📊 查看报表"按钮查看统计数据
+6. **接收提醒** - 每天11:30收到运动提醒
+
+### 📊 报表功能详细说明
+- **月度报表**: 查看指定月份的运动统计，包括运动天数、运动率、总时长等
+- **年度报表**: 查看整年的运动数据汇总和趋势分析
+- **统计指标**: 运动率、平均时长、连续运动天数等关键指标
+- **数据可视化**: 彩色卡片展示，清晰直观的数据呈现
+
+详细使用指南请查看 [REPORT_FEATURE_GUIDE.md](REPORT_FEATURE_GUIDE.md)
 
 ## 🔧 开发环境
 
