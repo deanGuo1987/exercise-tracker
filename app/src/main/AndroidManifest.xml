@@ -26,6 +26,11 @@
             </intent-filter>
         </activity>
         
+        <activity
+            android:name=".ReportActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+        
         <receiver
             android:name=".NotificationReceiver"
             android:enabled="true"

@@ -69,6 +69,12 @@ class MainActivity : AppCompatActivity() {
             // minDate = Calendar.getInstance().apply { add(Calendar.YEAR, -1) }.timeInMillis
             // maxDate = Calendar.getInstance().apply { add(Calendar.YEAR, 1) }.timeInMillis
         }
+        
+        // 设置报表按钮点击事件
+        val reportButton = findViewById<android.widget.Button>(R.id.reportButton)
+        reportButton.setOnClickListener {
+            openReportActivity()
+        }
     }
     
     /**
@@ -473,6 +479,14 @@ class MainActivity : AppCompatActivity() {
         } catch (e: Exception) {
             android.util.Log.e("MainActivity", "系统集成验证失败", e)
         }
+    }
+    
+    /**
+     * 打开报表Activity
+     */
+    private fun openReportActivity() {
+        val intent = android.content.Intent(this, ReportActivity::class.java)
+        startActivity(intent)
     }
     
     override fun onDestroy() {
