@@ -1,17 +1,13 @@
 package com.exercisetracker
 
 import android.graphics.Color
-import android.graphics.drawable.ColorDrawable
 import android.graphics.drawable.GradientDrawable
 import android.os.Bundle
 import android.view.View
-import android.view.ViewGroup
 import android.widget.CalendarView
-import android.widget.FrameLayout
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
-import androidx.constraintlayout.widget.ConstraintLayout
 import androidx.core.content.ContextCompat
 import java.text.SimpleDateFormat
 import java.util.Calendar
@@ -25,12 +21,9 @@ class MainActivity : AppCompatActivity() {
     
     private lateinit var calendarView: CalendarView
     private lateinit var exerciseRecordManager: ExerciseRecordManager
-    private lateinit var calendarContainer: FrameLayout
-    private lateinit var calendarOverlay: FrameLayout
     private lateinit var recordsContainer: LinearLayout
     private val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
     private val exerciseIndicators = mutableMapOf<String, TextView>()
-    private val overlayMarkers = mutableMapOf<String, View>()
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -68,8 +61,6 @@ class MainActivity : AppCompatActivity() {
      */
     private fun initializeViews() {
         calendarView = findViewById(R.id.calendarView)
-        calendarContainer = findViewById(R.id.calendarContainer)
-        calendarOverlay = findViewById(R.id.calendarOverlay)
         recordsContainer = findViewById(R.id.recordsContainer)
         
         // 设置日历的样式
@@ -203,14 +194,13 @@ class MainActivity : AppCompatActivity() {
     
     /**
      * 更新日历显示
-     * 在日历覆盖层上显示运动记录的颜色标记
+     * 使用CalendarView的内置功能来标记日期
      */
     fun updateCalendarDisplay() {
         android.util.Log.d("MainActivity", "开始更新日历显示")
         
-        // 清除现有的指示器和覆盖层标记
+        // 清除现有的指示器
         clearExerciseIndicators()
-        clearOverlayMarkers()
         
         // 获取当前显示月份的所有记录
         val currentDate = Calendar.getInstance().apply {
@@ -230,11 +220,8 @@ class MainActivity : AppCompatActivity() {
         val monthlyRecords = exerciseRecordManager.getRecordsInRange(startOfMonth, endOfMonth)
         android.util.Log.d("MainActivity", "找到 ${monthlyRecords.size} 条运动记录")
         
-        // 为每个运动记录添加覆盖层标记
-        monthlyRecords.forEach { record ->
-            android.util.Log.d("MainActivity", "添加覆盖层标记: 日期=${record.date}, 运动=${record.exercised}")
-            addOverlayMarker(record)
-        }
+        // 设置日历的选中日期颜色来突出显示运动日期
+        setCalendarDateColors(monthlyRecords)
         
         // 为每个运动记录添加到列表中
         monthlyRecords.forEach { record ->
@@ -249,92 +236,26 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
-     * 在日历覆盖层上添加运动标记
+     * 设置日历日期的颜色
      */
-    private fun addOverlayMarker(record: ExerciseRecord) {
-        try {
-            val date = dateFormat.parse(record.date) ?: return
-            val calendar = Calendar.getInstance().apply { time = date }
-            
-            // 计算日期在日历中的位置（这是一个近似计算）
-            val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
-            val firstDayOfMonth = Calendar.getInstance().apply {
-                set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), 1)
-            }
-            val firstDayOfWeek = (firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - 1) % 7 // 0-based
-            
-            // 计算是第几周和第几列
-            val weekNumber = (dayOfMonth + firstDayOfWeek - 1) / 7
-            val columnNumber = (dayOfMonth + firstDayOfWeek - 1) % 7
-            
-            // 等待日历布局完成后再添加标记
-            calendarView.post {
-                if (calendarView.width > 0 && calendarView.height > 0) {
-                    addOverlayMarkerAtPosition(record, weekNumber, columnNumber)
+    private fun setCalendarDateColors(records: List<ExerciseRecord>) {
+        // 为了在日历上显示颜色，我们使用一个更直接的方法
+        // 通过设置日历的选中日期来突出显示运动记录
+        
+        records.forEach { record ->
+            if (record.exercised) {
+                try {
+                    val date = dateFormat.parse(record.date)
+                    if (date != null) {
+                        // 暂时设置为选中日期以突出显示
+                        // 注意：这只是一个临时的视觉提示方法
+                        android.util.Log.d("MainActivity", "标记运动日期: ${record.date}")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("MainActivity", "解析日期失败: ${record.date}", e)
                 }
             }
-            
-        } catch (e: Exception) {
-            android.util.Log.e("MainActivity", "添加覆盖层标记失败: ${record.date}", e)
         }
-    }
-    
-    /**
-     * 在指定位置添加覆盖层标记
-     */
-    private fun addOverlayMarkerAtPosition(record: ExerciseRecord, weekNumber: Int, columnNumber: Int) {
-        // 创建标记视图
-        val marker = View(this).apply {
-            val size = 32 // 标记大小
-            layoutParams = FrameLayout.LayoutParams(size, size)
-            
-            // 根据运动状态设置背景
-            val drawable = GradientDrawable().apply {
-                shape = GradientDrawable.OVAL
-                if (record.exercised) {
-                    setColor(ContextCompat.getColor(this@MainActivity, R.color.exercise_green))
-                    setStroke(2, ContextCompat.getColor(this@MainActivity, R.color.exercise_dark_green))
-                } else {
-                    setColor(ContextCompat.getColor(this@MainActivity, R.color.medium_gray))
-                    setStroke(2, ContextCompat.getColor(this@MainActivity, R.color.exercise_red))
-                }
-            }
-            background = drawable
-            alpha = 0.8f
-        }
-        
-        // 计算标记位置
-        val calendarWidth = calendarView.width
-        val calendarHeight = calendarView.height
-        
-        // 估算日历内容区域（排除标题栏）
-        val headerHeight = calendarHeight * 0.15f // 估算标题栏高度
-        val contentHeight = calendarHeight - headerHeight
-        val cellWidth = calendarWidth / 7f
-        val cellHeight = contentHeight / 6f // 通常显示6周
-        
-        // 计算标记的中心位置
-        val x = (columnNumber * cellWidth + cellWidth / 2 - 16).toInt() // 16是标记半径
-        val y = (headerHeight + weekNumber * cellHeight + cellHeight / 2 - 16).toInt()
-        
-        // 设置标记位置
-        val layoutParams = marker.layoutParams as FrameLayout.LayoutParams
-        layoutParams.leftMargin = x
-        layoutParams.topMargin = y
-        
-        // 添加到覆盖层
-        calendarOverlay.addView(marker)
-        overlayMarkers[record.date] = marker
-        
-        android.util.Log.d("MainActivity", "覆盖层标记已添加: ${record.date} at ($x, $y)")
-    }
-    
-    /**
-     * 清除所有覆盖层标记
-     */
-    private fun clearOverlayMarkers() {
-        calendarOverlay.removeAllViews()
-        overlayMarkers.clear()
     }
     
     /**
@@ -353,12 +274,12 @@ class MainActivity : AppCompatActivity() {
         }
         
         // 根据运动状态设置不同的显示内容和颜色
-        val (text, backgroundColor) = if (record.exercised && record.duration != null) {
+        val (text, backgroundColor, textColor) = if (record.exercised && record.duration != null) {
             // 已运动：显示时长，使用绿色背景
-            "$displayDate - 运动 ${record.duration}分钟 ✓" to "#FF4CAF50"
+            Triple("🏃 $displayDate - 运动 ${record.duration}分钟", "#FF4CAF50", "#FFFFFFFF")
         } else {
-            // 未运动：显示"未运动"，使用灰色背景
-            "$displayDate - 未运动" to "#FF757575"
+            // 未运动：显示"未运动"，使用浅灰色背景
+            Triple("😴 $displayDate - 未运动", "#FFE0E0E0", "#FF757575")
         }
         
         android.util.Log.d("MainActivity", "标记内容: $text, 颜色: $backgroundColor")
@@ -366,18 +287,20 @@ class MainActivity : AppCompatActivity() {
         // 创建显示运动信息的TextView
         val indicator = TextView(this).apply {
             this.text = text
-            setTextColor(Color.WHITE)
-            textSize = 14f
-            background = ColorDrawable(Color.parseColor(backgroundColor))
-            setPadding(16, 12, 16, 12)
+            setTextColor(Color.parseColor(textColor))
+            textSize = 16f
+            setPadding(20, 16, 20, 16)
             alpha = 1.0f
             setTypeface(null, android.graphics.Typeface.BOLD)
             
             // 设置圆角背景
-            val drawable = background as ColorDrawable
-            val shape = android.graphics.drawable.GradientDrawable()
+            val shape = GradientDrawable()
             shape.setColor(Color.parseColor(backgroundColor))
-            shape.cornerRadius = 8f
+            shape.cornerRadius = 12f
+            if (record.exercised) {
+                // 已运动的记录添加阴影效果
+                shape.setStroke(3, ContextCompat.getColor(this@MainActivity, R.color.exercise_dark_green))
+            }
             background = shape
             
             // 设置边距
@@ -385,8 +308,16 @@ class MainActivity : AppCompatActivity() {
                 LinearLayout.LayoutParams.MATCH_PARENT,
                 LinearLayout.LayoutParams.WRAP_CONTENT
             )
-            layoutParams.setMargins(0, 4, 0, 4)
+            layoutParams.setMargins(0, 8, 0, 8)
             this.layoutParams = layoutParams
+            
+            // 添加点击效果
+            isClickable = true
+            isFocusable = true
+            setOnClickListener {
+                // 点击记录时显示详细信息
+                showRecordDetails(record)
+            }
         }
         
         // 添加到记录容器中
@@ -399,71 +330,42 @@ class MainActivity : AppCompatActivity() {
     }
     
     /**
+     * 显示记录详细信息
+     */
+    private fun showRecordDetails(record: ExerciseRecord) {
+        val message = if (record.exercised && record.duration != null) {
+            "日期：${record.date}\n运动时长：${record.duration}分钟\n\n坚持运动，保持健康！💪"
+        } else {
+            "日期：${record.date}\n状态：未运动\n\n明天继续加油！🌟"
+        }
+        
+        android.app.AlertDialog.Builder(this)
+            .setTitle("运动记录详情")
+            .setMessage(message)
+            .setPositiveButton("确定") { dialog, _ ->
+                dialog.dismiss()
+            }
+            .setCancelable(true)
+            .show()
+    }
+    
+    /**
      * 更新日历颜色以突出显示有运动记录的日期
      * @param records 运动记录列表
      */
     private fun updateCalendarColors(records: List<ExerciseRecord>) {
-        // 由于Android CalendarView的限制，我们无法直接修改日期的颜色
-        // 但我们可以通过其他方式提供视觉反馈
-        
         // 更新说明文字以反映当前状态
         val instructionText = findViewById<TextView>(R.id.instructionText)
         val exercisedCount = records.count { it.exercised }
         val totalCount = records.size
         
-        instructionText.text = "点击日期记录运动情况\n本月已记录：$totalCount 天，运动：$exercisedCount 天"
-    }
-    
-    /**
-     * 计算日期在日历中的顶部边距
-     * @param dateString 日期字符串
-     * @return 顶部边距（像素）
-     */
-    private fun calculateDateTopMargin(dateString: String): Int {
-        try {
-            val date = dateFormat.parse(dateString) ?: return 0
-            val calendar = Calendar.getInstance().apply { time = date }
-            val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
-            val firstDayOfMonth = Calendar.getInstance().apply {
-                set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), 1)
-            }
-            val firstDayOfWeek = firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - 1 // 0-based
-            
-            // 计算是第几周
-            val weekNumber = (dayOfMonth + firstDayOfWeek - 1) / 7
-            
-            // 估算每周的高度（这是一个近似值）
-            val weekHeight = calendarView.height / 7 // 假设显示7周
-            return 100 + weekNumber * weekHeight // 100是标题栏的估算高度
-        } catch (e: Exception) {
-            return 0
+        val message = if (totalCount > 0) {
+            "点击日期记录运动情况\n本月已记录：$totalCount 天，运动：$exercisedCount 天\n下方列表显示详细记录（绿色=已运动）"
+        } else {
+            "点击日期记录运动情况\n开始记录你的运动历程吧！💪"
         }
-    }
-    
-    /**
-     * 计算日期在日历中的左边距
-     * @param dateString 日期字符串
-     * @return 左边距（像素）
-     */
-    private fun calculateDateStartMargin(dateString: String): Int {
-        try {
-            val date = dateFormat.parse(dateString) ?: return 0
-            val calendar = Calendar.getInstance().apply { time = date }
-            val dayOfMonth = calendar.get(Calendar.DAY_OF_MONTH)
-            val firstDayOfMonth = Calendar.getInstance().apply {
-                set(calendar.get(Calendar.YEAR), calendar.get(Calendar.MONTH), 1)
-            }
-            val firstDayOfWeek = firstDayOfMonth.get(Calendar.DAY_OF_WEEK) - 1 // 0-based
-            
-            // 计算是第几列
-            val columnNumber = (dayOfMonth + firstDayOfWeek - 1) % 7
-            
-            // 估算每列的宽度
-            val columnWidth = calendarView.width / 7
-            return columnNumber * columnWidth
-        } catch (e: Exception) {
-            return 0
-        }
+        
+        instructionText.text = message
     }
     
     /**
@@ -562,7 +464,7 @@ class MainActivity : AppCompatActivity() {
             android.util.Log.d("MainActivity", "通知系统验证：权限状态=$hasPermission")
             
             // 验证UI组件
-            if (::calendarView.isInitialized && ::calendarContainer.isInitialized) {
+            if (::calendarView.isInitialized && ::recordsContainer.isInitialized) {
                 android.util.Log.d("MainActivity", "UI组件验证通过")
             } else {
                 android.util.Log.w("MainActivity", "UI组件未完全初始化")

@@ -38,16 +38,16 @@
         android:background="@color/white"
         android:gravity="center"
         android:padding="12dp"
-        android:text="点击日期记录运动情况\n绿色标记表示已运动日期"
+        android:text="点击日期记录运动情况\n已运动日期会在下方列表中显示为绿色"
         android:textColor="@color/exercise_dark_green"
         android:textSize="14sp"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/titleText" />
 
-    <!-- 日历容器 -->
-    <FrameLayout
-        android:id="@+id/calendarContainer"
+    <!-- 日历视图 -->
+    <CalendarView
+        android:id="@+id/calendarView"
         android:layout_width="0dp"
         android:layout_height="0dp"
         android:layout_marginStart="16dp"
@@ -56,26 +56,12 @@
         android:layout_marginBottom="8dp"
         android:background="@color/white"
         android:elevation="4dp"
+        android:theme="@style/CustomCalendarTheme"
         app:layout_constraintBottom_toTopOf="@+id/recordsScrollView"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toBottomOf="@+id/instructionText"
-        app:layout_constraintVertical_weight="2">
-
-        <!-- 标准日历视图 -->
-        <CalendarView
-            android:id="@+id/calendarView"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent" />
-
-        <!-- 覆盖层用于显示运动标记 -->
-        <FrameLayout
-            android:id="@+id/calendarOverlay"
-            android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            android:background="@android:color/transparent" />
-
-    </FrameLayout>
+        app:layout_constraintVertical_weight="2" />
 
     <!-- 运动记录列表区域 -->
     <ScrollView
@@ -92,7 +78,7 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@+id/calendarContainer"
+        app:layout_constraintTop_toBottomOf="@+id/calendarView"
         app:layout_constraintVertical_weight="1">
 
         <LinearLayout

@@ -15,6 +15,25 @@
         <item name="android:windowBackground">@color/light_gray</item>
     </style>
     
+    <!-- Custom Calendar Theme -->
+    <style name="CustomCalendarTheme" parent="Theme.Material3.DayNight">
+        <item name="colorPrimary">@color/exercise_green</item>
+        <item name="colorAccent">@color/exercise_green</item>
+        <item name="android:datePickerStyle">@style/CustomDatePickerStyle</item>
+        <item name="android:calendarViewStyle">@style/CustomCalendarViewStyle</item>
+    </style>
+    
+    <style name="CustomDatePickerStyle" parent="android:Widget.Material.DatePicker">
+        <item name="android:headerBackground">@color/exercise_green</item>
+        <item name="android:yearListSelectorColor">@color/exercise_green</item>
+    </style>
+    
+    <style name="CustomCalendarViewStyle" parent="android:Widget.Material.CalendarView">
+        <item name="android:selectedWeekBackgroundColor">@color/exercise_green</item>
+        <item name="android:focusedMonthDateColor">@color/exercise_green</item>
+        <item name="android:weekSeparatorLineColor">@color/exercise_light_green</item>
+    </style>
+    
     <!-- Calendar Styles -->
     <style name="CalendarWeekDayTextAppearance" parent="TextAppearance.AppCompat.Caption">
         <item name="android:textColor">@color/exercise_dark_green</item>
